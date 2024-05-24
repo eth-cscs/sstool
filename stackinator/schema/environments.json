@@ -45,9 +45,9 @@
                              "properties": {
                                  "spec": {"type": "string"},
                                  "gpu":  {
-					 "enum": ["cuda", "rocm", null, false],
-					 "default": null
-				 }
+                     "enum": ["cuda", "rocm", null, false],
+                     "default": null
+                 }
                              }
                          },
                          {"enum": [null, false]}

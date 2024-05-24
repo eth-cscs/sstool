@@ -3,7 +3,7 @@
     "title": "Schema for Spack Stack compilers.yaml recipe file",
     "type": "object",
     "additionalProperties": false,
-    "required": ["bootstrap", "gcc"],
+    "required": ["gcc"],
     "defs": {
         "gcc_version_spec": {
             "type": "string",
@@ -35,20 +35,32 @@
     },
     "properties": {
         "bootstrap": {
-            "type": "object",
-            "properties": {
-                "spec": {"$ref": "#/defs/gcc_version_spec"}
-            },
-            "additionalProperties": false,
-            "required": ["spec"]
+            "oneOf": [
+                {
+                    "type": "object",
+                    "properties": {
+                        "spec": {"$ref": "#/defs/gcc_version_spec"}
+                    },
+                    "additionalProperties": false,
+                    "required": ["spec"]
+                },
+                {"type" : "null"}
+            ],
+            "default": null
         },
         "gcc": {
-            "type": "object",
-            "properties": {
-                "specs": {"$ref": "#/defs/gcc_version_spec_list"}
-            },
-            "additionalProperties": false,
-            "required": ["specs"]
+            "oneOf": [
+                {
+                    "type": "object",
+                    "properties": {
+                        "specs": {"$ref": "#/defs/gcc_version_spec_list"}
+                    },
+                    "additionalProperties": false,
+                    "required": ["specs"]
+                },
+                {"type" : "null"}
+            ],
+            "default": null
         },
         "llvm": {
             "oneOf": [

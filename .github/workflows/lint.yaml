@@ -20,6 +20,9 @@ jobs:
     - name: Black
       run: |
         black --check --verbose stackinator unittests
+        err=$?
+        [[ $? -eq 0  ]] || black --diff stackinator unittests
+        exit $err
     - name: isort
       run: |
         isort --check --skip stackinator/repo --diff .

@@ -311,7 +311,10 @@ class Recipe:
                         spec = f"{mpi_impl}{version_opt} {options or ''}".strip()
 
                         if mpi_gpu:
-                            spec = f"{spec} +{mpi_gpu}"
+                            if '^' in spec:
+                                spec = spec.replace('^', f'+{mpi_gpu} ^', 1)
+                            else:
+                                spec = f"{spec} +{mpi_gpu}"
 
                         environments[name]["specs"].append(spec)
                     else:

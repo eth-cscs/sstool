@@ -15,7 +15,7 @@ class Recipe:
             "3.0a",
             "+xpmem fabrics=ch4ofi ch4_max_vcis=4 process_managers=slurm",
         ),
-        "openmpi": ("5", "+internal-pmix +legacylaunchers +orterunprefix fabrics=cma,ofi,xpmem schedulers=slurm"),
+        "openmpi": ("5", "+internal-pmix fabrics=cma,ofi,xpmem schedulers=slurm +cray-xpmem ^libfabric@main ^libcxi@main ^cxi-driver@main ^cassini-headers@main"),
     }
 
     @property

@@ -15,7 +15,10 @@ class Recipe:
             "3.0a",
             "+xpmem fabrics=ch4ofi ch4_max_vcis=4 process_managers=slurm",
         ),
-        "openmpi": ("5", "+internal-pmix fabrics=cma,ofi,xpmem schedulers=slurm +cray-xpmem ^libfabric@main ^libcxi@main ^cxi-driver@main ^cassini-headers@main"),
+        "openmpi": (
+            "5",
+            "+internal-pmix fabrics=cma,ofi,xpmem schedulers=slurm +cray-xpmem ^libfabric@main ^libcxi@main ^cxi-driver@main ^cassini-headers@main",
+        ),
     }
 
     @property
@@ -311,8 +314,8 @@ class Recipe:
                         spec = f"{mpi_impl}{version_opt} {options or ''}".strip()
 
                         if mpi_gpu:
-                            if '^' in spec:
-                                spec = spec.replace('^', f'+{mpi_gpu} ^', 1)
+                            if "^" in spec:
+                                spec = spec.replace("^", f"+{mpi_gpu} ^", 1)
                             else:
                                 spec = f"{spec} +{mpi_gpu}"
 

@@ -3,6 +3,7 @@ import pathlib
 
 import jinja2
 import yaml
+import re
 
 from . import cache, root_logger, schema, spack_util
 
@@ -297,32 +298,32 @@ class Recipe:
                 mpi = config["mpi"]
                 mpi_spec = mpi["spec"]
                 mpi_gpu = mpi["gpu"]
+
                 if mpi_spec:
-                    try:
-                        mpi_impl, mpi_ver = mpi_spec.strip().split(sep="@", maxsplit=1)
-                    except ValueError:
-                        mpi_impl = mpi_spec.strip()
-                        mpi_ver = None
+                    # split mpi_spec into mpi_impl, mpi_ver, mpi_variants using 3 capture groups (2 optional)
+                    pattern = r"([^\s@~]+)(?:\s*@(\S+))?(?:([\s\+~].+))?"
+                    match = re.match(pattern, mpi_spec.strip())
+                    if match:
+                        mpi_impl = match.group(1)
+                        mpi_ver = match.group(2).strip() if match.group(2) else None
+                        mpi_variants = match.group(3).strip() if match.group(3) else None
+                        if mpi_impl in Recipe.valid_mpi_specs:
+                            default_ver, options = Recipe.valid_mpi_specs[mpi_impl]
+                            version_opt = f"@{mpi_ver}" if mpi_ver else f"@{default_ver}" if default_ver else ""
+                            spec = f"{mpi_impl}{version_opt} {mpi_variants or options or ''}".strip()
 
-                    if mpi_impl in Recipe.valid_mpi_specs:
-                        default_ver, options = Recipe.valid_mpi_specs[mpi_impl]
-                        if mpi_ver:
-                            version_opt = f"@{mpi_ver}"
+                            if mpi_gpu:
+                                if "^" in spec:
+                                    spec = spec.replace("^", f"+{mpi_gpu} ^", 1)
+                                else:
+                                    spec = f"{spec} +{mpi_gpu}"
+
+                            environments[name]["specs"].append(spec)
                         else:
-                            version_opt = f"@{default_ver}" if default_ver else ""
-
-                        spec = f"{mpi_impl}{version_opt} {options or ''}".strip()
-
-                        if mpi_gpu:
-                            if "^" in spec:
-                                spec = spec.replace("^", f"+{mpi_gpu} ^", 1)
-                            else:
-                                spec = f"{spec} +{mpi_gpu}"
-
-                        environments[name]["specs"].append(spec)
+                            # TODO: Create a custom exception type
+                            raise Exception(f"Unsupported mpi: {mpi_impl}")
                     else:
-                        # TODO: Create a custom exception type
-                        raise Exception(f"Unsupported mpi: {mpi_impl}")
+                        raise ValueError(f"Invalid mpi_spec format: {mpi_spec}")
 
         # set constraints that ensure the the main compiler is always used to build packages
         # that do not explicitly request a compiler.

@@ -383,6 +383,7 @@ class Builder:
                 mpi_spec = mpi["spec"]
                 mpi_gpu = mpi["gpu"]
                 mpi_xspec = mpi["xspec"] if "xspec" in mpi else None
+                mpi_deps = mpi["depends"] if "depends" in mpi else None
 
                 if mpi_spec:
                     try:
@@ -394,17 +395,22 @@ class Builder:
                     if mpi_impl in network_config["mpi_supported"]:
                         default_ver = network_config[mpi_impl]["version"]
                         default_spec = network_config[mpi_impl]["spec"] if "spec" in network_config[mpi_impl] else ""
-                        # select users version or the default version if user did not specify
+                        default_deps = network_config[mpi_impl]["depends"] if "depends" in network_config[mpi_impl] else ""
+
+                        # select users versions or the default versions if user did not specify
                         version_opt = f"@{mpi_ver or default_ver}"
                         # create full spec based on user provided spec or default spec
                         spec_opt = f"{mpi_impl}{version_opt} {mpi_xspec or default_spec}"
                         if mpi_gpu and not mpi_gpu in spec_opt:
                             spec_opt = f"{spec_opt} +{mpi_gpu}"
+                        deps_opt = mpi_deps or default_deps
+                        for dep in deps_opt:
+                            spec_opt = f"{spec_opt} ^{dep}"
+
                         recipe.environments[name]["specs"].append(spec_opt)
                     else:
                         # TODO: Create a custom exception type
                         raise Exception(f"Unsupported mpi: {mpi_impl}")
-            print(f"RECIPE spec: {recipe.environments[name]['specs']}")
 
 
         # Add custom spack package recipes, configured via Spack repos.

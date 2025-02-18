@@ -9,18 +9,6 @@ from . import cache, root_logger, schema, spack_util
 
 
 class Recipe:
-    valid_mpi_specs = {
-        "cray-mpich": (None, None),
-        "mpich": ("4.1", "device=ch4 netmod=ofi +slurm"),
-        "mvapich2": (
-            "3.0a",
-            "+xpmem fabrics=ch4ofi ch4_max_vcis=4 process_managers=slurm",
-        ),
-        "openmpi": (
-            "5",
-            "+internal-pmix fabrics=cma,ofi,xpmem schedulers=slurm +cray-xpmem ^libfabric@main ^libcxi@main ^cxi-driver@main ^cassini-headers@main",
-        ),
-    }
 
     @property
     def path(self):
@@ -284,46 +272,19 @@ class Recipe:
         for _, config in environments.items():
             config["exclude_from_cache"] = ["cuda", "nvhpc", "perl"]
 
-        # check the environment descriptions and ammend where features are missing
+        # check the environment descriptions and amend where features are missing
         for name, config in environments.items():
             if ("specs" not in config) or (config["specs"] is None):
                 environments[name]["specs"] = []
 
             if "mpi" not in config:
-                environments[name]["mpi"] = {"spec": None, "gpu": None}
+                environments[name]["mpi"] = {"spec": None, "gpu": None, "network": {"spec": None}}
 
-        # complete configuration of MPI in each environment
-        for name, config in environments.items():
-            if config["mpi"]:
-                mpi = config["mpi"]
-                mpi_spec = mpi["spec"]
-                mpi_gpu = mpi["gpu"]
+            if "network" not in config["mpi"]:
+                environments[name]["mpi"]["network"] = {"spec": ""}
 
-                if mpi_spec:
-                    # split mpi_spec into mpi_impl, mpi_ver, mpi_variants using 3 capture groups (2 optional)
-                    pattern = r"([^\s@~]+)(?:\s*@(\S+))?(?:([\s\+~].+))?"
-                    match = re.match(pattern, mpi_spec.strip())
-                    if match:
-                        mpi_impl = match.group(1)
-                        mpi_ver = match.group(2).strip() if match.group(2) else None
-                        mpi_variants = match.group(3).strip() if match.group(3) else None
-                        if mpi_impl in Recipe.valid_mpi_specs:
-                            default_ver, options = Recipe.valid_mpi_specs[mpi_impl]
-                            version_opt = f"@{mpi_ver}" if mpi_ver else f"@{default_ver}" if default_ver else ""
-                            spec = f"{mpi_impl}{version_opt} {mpi_variants or options or ''}".strip()
-
-                            if mpi_gpu:
-                                if "^" in spec:
-                                    spec = spec.replace("^", f"+{mpi_gpu} ^", 1)
-                                else:
-                                    spec = f"{spec} +{mpi_gpu}"
-
-                            environments[name]["specs"].append(spec)
-                        else:
-                            # TODO: Create a custom exception type
-                            raise Exception(f"Unsupported mpi: {mpi_impl}")
-                    else:
-                        raise ValueError(f"Invalid mpi_spec format: {mpi_spec}")
+        # we have not loaded the system configs yet, so mpi information will be generated
+        # during the builder phase. We will validate the mpi information then.
 
         # set constraints that ensure the the main compiler is always used to build packages
         # that do not explicitly request a compiler.

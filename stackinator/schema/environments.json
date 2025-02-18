@@ -47,7 +47,8 @@
                                  "gpu":  {
                                      "enum": ["cuda", "rocm", null, false],
                                      "default": null
-                                 }
+                                 },
+                                 "xspec": {"type": "string"}
                              }
                          },
                          {"enum": [null, false]}
@@ -87,7 +88,7 @@
                                 },
                                 "uenv": {
                                     "type": "object",
-                                    "additionalPropertis": false,
+                                    "additionalProperties": false,
                                     "properties": {
                                         "add_compilers": { "type": "boolean" },
                                         "prefix_paths": {

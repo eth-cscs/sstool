@@ -144,10 +144,12 @@ For example, in the recipe below, only `netcdf-fortran` will be built with the `
 
 ### MPI
 
-Stackinator can configure cray-mpich (CUDA, ROCM, or non-GPU aware) on a per-environment basis, by setting the `mpi` field in an environment.
+Stackinator can configure cray-mpich (CUDA, ROCM, or non-GPU aware) or OpenMPI (with or without CUDA) (on a per-environment basis, by setting the `mpi` field in an environment.
 
 !!! note
-    Future versions of Stackinator will support OpenMPI, MPICH and MVAPICH when (and if) they develop robust support for HPE SlingShot 11 interconnect.
+    Future versions of Stackinator will fully support OpenMPI, MPICH and MVAPICH when (and if) they develop robust support for HPE SlingShot 11 interconnect.
+
+    Current OpenMPI support has been tested lightly and is not guaranteed to be production ready - only OpenMPI@5.x.x is supported (default is @5.0.6 at the time of writing) - CUDA is supported, ROCM has not yet been tested.
 
 If the `mpi` field is not set, or is set to `null`, MPI will not be configured in an environment:
 ```yaml title="environments.yaml: no MPI"
@@ -157,10 +159,16 @@ serial-env:
 ```
 
 To configure MPI without GPU support, set the `spec` field with an optional version:
-```yaml title="environments.yaml: MPI without GPU support"
+```yaml title="environments.yaml: Cray-mpich without GPU support"
 host-env:
   mpi:
     spec: cray-mpich@8.1.23
+  # ...
+```
+```yaml title="environments.yaml: OpenMPI without GPU support"
+host-env:
+  mpi:
+    spec: openmpi
   # ...
 ```
 
@@ -176,7 +184,22 @@ rocm-env:
     spec: cray-mpich
     gpu: rocm
   # ...
+ompi-cuda-env:
+  mpi:
+    spec: openmpi
+    gpu: cuda
+  # ...
 ```
+#### Experimental libfabric 2.x support with cray-mpich
+HPE recently open-sourced the libfabric/cxi provider (and related drivers) and this can be built into cray-mpich by adding the `+cxi` variant to the spec
+```yaml title="environments.yaml: MPI using new libfabric/cxi stack"
+mpich-cxi-env:
+  mpi:
+    spec: cray-mpich +cxi
+    gpu: cuda
+  # ...
+```
+OpenMPI does not provide a `cxi` option since it is mandatory to use it for builds on the alps cluster. Currently the performance of OpenMPI on Alps clusters might not be optimal and work is ongoing to fine tune it especially for intra-node performance.
 
 !!! alps
 
@@ -207,7 +230,7 @@ The list of software packages to install is configured in the `spec:` field of a
 The `deprecated: ` field controls if Spack should consider versions marked as deprecated, and can be set to `true` or `false` (for considering or not considering deprecated versions, respectively).
 
 The `unify:` field controls the Spack concretiser, and can be set to three values `true`, `false` or `when_possible`.
-The 
+The
 
 ```yaml
 cuda-env:

@@ -386,7 +386,8 @@ class Builder:
                 user_mpi_xspec = mpi["xspec"] if "xspec" in mpi else None
                 user_mpi_deps = mpi["depends"] if "depends" in mpi else None
                 self._logger.debug(
-                    f"User   MPI selection: spec={user_mpi_spec}, gpu={user_mpi_gpu}, xspec={user_mpi_xspec}, deps={user_mpi_deps}"
+                    f"User MPI selection: spec={user_mpi_spec}, gpu={user_mpi_gpu}, "
+                    f"xspec={user_mpi_xspec}, deps={user_mpi_deps}"
                 )
 
                 if user_mpi_spec:

@@ -3,7 +3,6 @@ import pathlib
 
 import jinja2
 import yaml
-import re
 
 from . import cache, root_logger, schema, spack_util
 

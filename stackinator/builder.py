@@ -353,20 +353,76 @@ class Builder:
             with dst.open("w") as fid:
                 fid.write(cache.generate_mirrors_yaml(recipe.mirror))
 
+        packages_data = {}
+        # append network packages to packages.yaml
+        network_config_path = system_config_path / "network.yaml"
+        if not network_config_path.is_file():
+            raise FileNotFoundError(f"The network configuration file '{network_config_path}' does not exist")
+        with network_config_path.open() as fid:
+            network_config = yaml.load(fid, Loader=yaml.Loader)
+            packages_data.update(network_config.get("packages", {}))
+
         # append recipe packages to packages.yaml
         if recipe.packages:
             system_packages = system_config_path / "packages.yaml"
-            packages_data = {}
             if system_packages.is_file():
                 # load system yaml
                 with system_packages.open() as fid:
                     raw = yaml.load(fid, Loader=yaml.Loader)
-                    packages_data = raw["packages"]
+                    packages_data.update(raw["packages"])
             packages_data.update(recipe.packages["packages"])
             packages_yaml = yaml.dump({"packages": packages_data})
             packages_path = config_path / "packages.yaml"
             with packages_path.open("w") as fid:
                 fid.write(packages_yaml)
+
+        # validate the recipe mpi selection
+        for name, config in recipe.environments.items():
+            # config[mpi] holds the user specified settings in environment.yaml
+            if config["mpi"]:
+                mpi = config["mpi"]
+                user_mpi_spec = mpi["spec"]
+                user_mpi_gpu = mpi["gpu"]
+                user_mpi_xspec = mpi["xspec"] if "xspec" in mpi else None
+                user_mpi_deps = mpi["depends"] if "depends" in mpi else None
+                self._logger.debug(
+                    f"User MPI selection: spec={user_mpi_spec}, gpu={user_mpi_gpu}, "
+                    f"xspec={user_mpi_xspec}, deps={user_mpi_deps}"
+                )
+
+                if user_mpi_spec:
+                    try:
+                        mpi_impl, mpi_ver = user_mpi_spec.strip().split(sep="@", maxsplit=1)
+                    except ValueError:
+                        mpi_impl = user_mpi_spec.strip()
+                        mpi_ver = None
+
+                    # network_config holds the system specified settings in cluster config / network.yaml
+                    if mpi_impl in network_config["mpi_supported"]:
+                        default_ver = network_config[mpi_impl]["version"]
+                        default_spec = network_config[mpi_impl]["spec"] if "spec" in network_config[mpi_impl] else ""
+                        default_deps = (
+                            network_config[mpi_impl]["depends"] if "depends" in network_config[mpi_impl] else ""
+                        )
+                        self._logger.debug(
+                            f"System MPI selection: spec={mpi_impl}@{default_ver} {default_spec}, deps={default_deps}"
+                        )
+
+                        # select users versions or the default versions if user did not specify
+                        version_opt = f"@{mpi_ver or default_ver}"
+                        # create full spec based on user provided spec or default spec
+                        spec_opt = f"{mpi_impl}{version_opt} {user_mpi_xspec or default_spec}"
+                        if user_mpi_gpu and user_mpi_gpu not in spec_opt:
+                            spec_opt = f"{spec_opt} +{user_mpi_gpu}"
+                        deps_opt = user_mpi_deps or default_deps
+                        for dep in deps_opt:
+                            spec_opt = f"{spec_opt} ^{dep}"
+                        self._logger.debug(f"Final  MPI selection: spec={spec_opt}")
+
+                        recipe.environments[name]["specs"].append(spec_opt)
+                    else:
+                        # TODO: Create a custom exception type
+                        raise Exception(f"Unsupported mpi: {mpi_impl}")
 
         # Add custom spack package recipes, configured via Spack repos.
         # Step 1: copy Spack repos to store_path where they will be used to

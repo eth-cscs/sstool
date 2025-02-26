@@ -133,7 +133,7 @@ def test_environments_yaml(yaml_path):
         # test defaults were set correctly
         assert env["unify"] == "when_possible"
         assert env["packages"] == ["perl", "git"]
-        assert env["mpi"] == {"spec": "cray-mpich", "gpu": "cuda"}
+        assert env["mpi"] == {"depends": [], "spec": "cray-mpich", "gpu": "cuda"}
         assert env["variants"] == ["+mpi", "+cuda"]
         assert env["views"] == {"default": None}
 

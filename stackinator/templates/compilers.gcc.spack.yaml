@@ -13,7 +13,7 @@ spack:
     reuse: false
   packages:
     gcc:
-      variants: [build_type=Release +strip]
+      variants: [build_type=Release +profiled +strip]
     mpc:
       variants: [libs=static]
     gmp:

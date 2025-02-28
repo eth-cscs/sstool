@@ -8,3 +8,7 @@ line-length = 120
 [tool.isort]
 profile = "black"
 skip = ["external/"]
+
+[tool.ruff]
+line-length = 120
+extend-exclude = ["external/", "unittests/recipes"]
